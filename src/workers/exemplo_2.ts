@@ -1,6 +1,6 @@
 import amqp, { Channel } from 'amqplib';
 
-console.log('Service Worker');
+console.log('Exemplo 2');
 
 async function reciveMessage(queue:string){
     const connection =  await amqp.connect('amqp://guest:guest@localhost');
@@ -10,22 +10,32 @@ async function reciveMessage(queue:string){
       durable: true
     });
 
+    channel.assertExchange('notifications', 'direct',{
+        durable: false
+    })
+
+    channel.bindQueue(queue, 'notifications', 'sms');
+    channel.bindQueue(queue, 'notifications', 'email');
+
     console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
     channel.consume(queue, async function(msg) {
     console.log(" [x] Received %s", msg?.content.toString());
     if(msg){
-        const sendClient = await sendWebHook('http://localhost:3000/cliente/webhook/status', msg.content.toString())
-        const sendGerente = await sendWebHook('http://localhost:3000/gerente/webhook/status', msg.content.toString())
-        console.log(" Resposta cliente: ", await sendClient.json());
-        console.log(" Resposta gerente: ", await sendGerente.json());
+        if(msg.content.toString() === 'SMS'){
+            const sendGerente = await sendWebHook('http://localhost:3000/gerente/webhook/sms', msg.content.toString())
+            console.log(" Resposta gerente: ", await sendGerente.json());
+        }
+        if(msg.content.toString() === 'EMAIL'){
+            const sendGerente = await sendWebHook('http://localhost:3000/gerente/webhook/email', msg.content.toString())
+            console.log(" Resposta gerente: ", await sendGerente.json());
+        }
     }
     },{
-        noAck: false
+        noAck: true
     })
 }
 
-reciveMessage('statusPedidoCliente');
-
+reciveMessage('notifications');
 
 async function sendWebHook(url:string,data: string):Promise<Response>{
   return await fetch(url, {

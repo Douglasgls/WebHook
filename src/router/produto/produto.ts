@@ -1,6 +1,7 @@
 import { Router } from "express";
 import sqlite3 from "sqlite3";
 import sendToQueue from "../../rabbitmq/rabbitmq";
+import sendToQueueExchange from "../../rabbitmq/exemplo_2";
 
 const router = Router();
 
@@ -17,6 +18,5 @@ router.post("/webhook/status/:id/:status", async (req, res) => {
         rabbitMQ: enviado
     })
 });
-
 
 export default router;
